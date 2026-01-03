@@ -231,35 +231,81 @@ function setupDragAndDrop(element, content, node) {
  * Move um nodo de um lugar para outro no objeto de dados
  */
 function moveNode(sourceId, targetId) {
+    if (sourceId === targetId) return;
+
     let sourceNode = null;
+    let targetNode = null;
 
-    // Função para remover o nodo da origem
-    const findAndRemove = (list) => {
-        for (let i = 0; i < list.length; i++) {
-            if (list[i].id === sourceId) {
-                sourceNode = list.splice(i, 1)[0];
-                return true;
-            }
-            if (list[i].children && findAndRemove(list[i].children)) return true;
-        }
-        return false;
-    };
-
-    // Função para inserir no destino
-    const findAndInsert = (list) => {
+    // 1. Localizar os objetos dos nós envolvidos para análise
+    const findNodes = (list) => {
         for (let n of list) {
-            if (n.id === targetId) {
-                n.children.push(sourceNode);
-                n.isOpen = true; // Abre a pasta ao receber item
-                return true;
-            }
-            if (n.children && findAndInsert(n.children)) return true;
+            if (n.id === sourceId) sourceNode = n;
+            if (n.id === targetId) targetNode = n;
+            if (n.children) findNodes(n.children);
         }
-        return false;
+    };
+    findNodes(treeData);
+
+    if (!sourceNode || !targetNode) return;
+
+    // Função auxiliar para remover um nó de qualquer lugar da árvore
+    const removeNodeFromList = (list, id) => {
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].id === id) return list.splice(i, 1)[0];
+            if (list[i].children) {
+                const found = removeNodeFromList(list[i].children, id);
+                if (found) return found;
+            }
+        }
+        return null;
     };
 
-    findAndRemove(treeData);
-    if (sourceNode) findAndInsert(treeData);
+    // 2. CASO ESPECIAL: Mover Pai para dentro do Filho (Inversão)
+    if (isDescendant(sourceNode, targetId)) {
+        console.log("Detectada tentativa de mover pai para filho. Invertendo hierarquia...");
+
+        // A. Removemos o filho (alvo) de dentro do pai (origem)
+        const filhoExtraido = removeNodeFromList(sourceNode.children, targetId);
+        
+        // B. Removemos o pai de onde quer que ele esteja na árvore original
+        const paiExtraido = removeNodeFromList(treeData, sourceId);
+
+        if (filhoExtraido && paiExtraido) {
+            // C. O antigo pai agora vira filho do seu próprio filho
+            if (!filhoExtraido.children) filhoExtraido.children = [];
+            filhoExtraido.children.push(paiExtraido);
+            filhoExtraido.isOpen = true;
+
+            // D. O filho (que agora carrega o pai) é promovido para a raiz
+            treeData.push(filhoExtraido);
+        }
+    } 
+    // 3. CASO NORMAL: Mover para uma pasta que não é sua descendente
+    else {
+        if (targetNode.type !== 'folder') {
+            console.warn("Destino não é uma pasta.");
+            return;
+        }
+
+        const nodeToMove = removeNodeFromList(treeData, sourceId);
+        if (nodeToMove) {
+            if (!targetNode.children) targetNode.children = [];
+            targetNode.children.push(nodeToMove);
+            targetNode.isOpen = true;
+        }
+    }
+
+    render();
+}
+
+/**
+ * Função Auxiliar: Verifica se o targetId pertence a algum descendente do pai
+ */
+function isDescendant(parentNode, targetId) {
+    if (!parentNode.children || parentNode.children.length === 0) return false;
+    return parentNode.children.some(child => 
+        child.id === targetId || isDescendant(child, targetId)
+    );
 }
 
 /**
@@ -300,11 +346,8 @@ function setupRootDropZone() {
  * Move um nodo para o nível mais externo (raiz)
  */
 function moveNodeToRoot(sourceId) {
-    if (!sourceId) return;
-    
     let sourceNode = null;
 
-    // 1. Função para encontrar e remover o nodo de onde ele estiver
     const findAndRemove = (list) => {
         for (let i = 0; i < list.length; i++) {
             if (list[i].id === sourceId) {
@@ -318,13 +361,9 @@ function moveNodeToRoot(sourceId) {
 
     findAndRemove(treeData);
 
-    // 2. Se o nodo foi encontrado, adiciona ele ao final do array raiz
     if (sourceNode) {
-        // Verifica se ele já não está na raiz para evitar duplicados (segurança)
-        const exists = treeData.some(n => n.id === sourceId);
-        if (!exists) {
-            treeData.push(sourceNode);
-        }
+        // Garante que o nó vá para o topo do array treeData
+        treeData.push(sourceNode);
     }
 }
 
