@@ -31,6 +31,19 @@ body {
     position: relative;
 }
 
+#treeview {
+    min-height: 200px; /* Garante uma área mínima para soltar o item */
+    padding: 10px;
+    border: 2px dashed transparent;
+    transition: all 0.2s;
+}
+
+/* Feedback visual quando arrasta para a raiz */
+.drag-root-over {
+    border-color: #2196F3 !important;
+    background-color: rgba(33, 150, 243, 0.05);
+}
+
 .node-content {
     display: flex;
     align-items: center;

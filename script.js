@@ -270,23 +270,26 @@ function setupRootDropZone() {
 
     rootContainer.addEventListener('dragover', (e) => {
         e.preventDefault();
-        // Verifica se o drop está acontecendo diretamente no container (espaço vazio)
-        // ou se o usuário quer mover para a raiz.
-        if (e.target === rootContainer) {
-            rootContainer.style.backgroundColor = "#f0f7ff";
-        }
+        e.stopPropagation();
+        // Adiciona um feedback visual na raiz
+        rootContainer.classList.add('drag-root-over');
     });
 
-    rootContainer.addEventListener('dragleave', () => {
-        rootContainer.style.backgroundColor = "transparent";
+    rootContainer.addEventListener('dragleave', (e) => {
+        // Remove o feedback apenas se sair do container principal
+        if (e.target === rootContainer) {
+            rootContainer.classList.remove('drag-root-over');
+        }
     });
 
     rootContainer.addEventListener('drop', (e) => {
         e.preventDefault();
-        rootContainer.style.backgroundColor = "transparent";
+        e.stopPropagation();
+        rootContainer.classList.remove('drag-root-over');
 
-        // Se o alvo do drop for o container principal, move para a raiz
-        if (e.target === rootContainer) {
+        // Se o drop acontecer no container (espaço vazio) ou 
+        // se o alvo não for uma pasta (o que significa que caiu entre itens)
+        if (e.target === rootContainer || !e.target.closest('.folder-icon')) {
             moveNodeToRoot(draggedNodeId);
             render();
         }
@@ -297,9 +300,11 @@ function setupRootDropZone() {
  * Move um nodo para o nível mais externo (raiz)
  */
 function moveNodeToRoot(sourceId) {
+    if (!sourceId) return;
+    
     let sourceNode = null;
 
-    // 1. Remove de onde ele estiver
+    // 1. Função para encontrar e remover o nodo de onde ele estiver
     const findAndRemove = (list) => {
         for (let i = 0; i < list.length; i++) {
             if (list[i].id === sourceId) {
@@ -313,10 +318,11 @@ function moveNodeToRoot(sourceId) {
 
     findAndRemove(treeData);
 
-    // 2. Adiciona ao array principal se ele não for duplicado
+    // 2. Se o nodo foi encontrado, adiciona ele ao final do array raiz
     if (sourceNode) {
-        // Evita duplicar se já estiver na raiz (opcional)
-        if (!treeData.find(n => n.id === sourceId)) {
+        // Verifica se ele já não está na raiz para evitar duplicados (segurança)
+        const exists = treeData.some(n => n.id === sourceId);
+        if (!exists) {
             treeData.push(sourceNode);
         }
     }
@@ -333,28 +339,30 @@ function render() {
  * Função de Exportação
  * @param {boolean} apenasSelecionados - Se true, filtra apenas os marcados
  */
-function exportarArvore(apenasSelecionados = true) {
+function exportarArvore(apenasSelecionados = false) {
     
-    // Função recursiva para filtrar os dados
     const processarNodos = (nodos) => {
         let resultado = [];
 
         nodos.forEach(node => {
-            // Se apenasSelecionados for true, o nodo deve estar checked ou ser pai de algo checked
+            // Verifica se o nodo deve ser incluído
             const deveIncluir = !apenasSelecionados || node.checked || node.indeterminate;
 
             if (deveIncluir) {
-                // Criamos uma cópia para não alterar o original (clonagem profunda simples)
+                // Criamos o objeto incluindo a propriedade 'checked'
                 let novoNodo = { 
                     id: node.id, 
                     name: node.name, 
-                    type: node.type 
+                    type: node.type,
+                    checked: node.checked // Adicionado aqui
                 };
+
+                // Se quiser exportar também o estado "menos" (parcial), descomente a linha abaixo:
+                // novoNodo.indeterminate = node.indeterminate || false;
 
                 if (node.type === 'folder' && node.children) {
                     const filhosFiltrados = processarNodos(node.children);
-                    // Se estivermos exportando apenas selecionados, 
-                    // incluímos a pasta apenas se ela tiver filhos selecionados ou estiver ela mesma marcada
+                    
                     if (!apenasSelecionados || filhosFiltrados.length > 0 || node.checked) {
                         novoNodo.children = filhosFiltrados;
                         resultado.push(novoNodo);
@@ -370,8 +378,7 @@ function exportarArvore(apenasSelecionados = true) {
 
     const dadosExportados = processarNodos(treeData);
     
-    // Mostra no console e faz download do JSON
-    console.log("Dados Exportados:", dadosExportados);
+    console.log("Dados Exportados com Seleção:", dadosExportados);
     downloadJSON(dadosExportados);
 }
 

@@ -29,11 +29,13 @@ Um componente de árvore de arquivos (File Explorer) dinâmico e interativo, des
 
 ## 📂 Estrutura do Projeto
 
+```
 ├── index.html          # Estrutura HTML e containers dos modais
 ├── style.css           # Estilização da árvore, estados de drag e componentes
 ├── script.js           # Core do projeto (Recursividade, Drag&Drop e Modais)
 └── arquivos_readme/
     └── image.png       # Screenshot do projeto
+```
 
 ## 🎮 Como Utilizar
 
@@ -54,5 +56,7 @@ Um componente de árvore de arquivos (File Explorer) dinâmico e interativo, des
 
 No arquivo script.js, você pode alternar a exibição dos checkboxes:
 
+```javascript
 let permitirMarcar = true; // Altere para false para esconder os checkboxes
+```
 
