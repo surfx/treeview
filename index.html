@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TreeView Profissional</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h2>Gerenciador de Arquivos</h2>
+        <div class="tree-controls">
+            <button onclick="addNodeRoot('folder')"><i class="fa-solid fa-folder-plus"></i> Nova Pasta Raiz</button>
+            <button onclick="addNodeRoot('file')"><i class="fa-solid fa-plus"></i> Novo Arquivo Raiz</button>
+        </div>
+
+        <div id="treeview"></div>
+
+        <div class="actions">
+            <button id="btnExportarTodos" class="btn">Exportar Todos</button>
+            <button id="btnExportar" class="btn">Exportar Selecionados</button>
+        </div>
+    </div>
+
+    <!-- modal -->
+    <div id="customModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Confirmação</h3>
+                <span id="closeModal" class="close-btn"><i class="fa-solid fa-circle-xmark"></i></span>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage"></p>
+                <input type="text" id="modalInput" class="modal-input hidden" placeholder="Digite o nome...">
+            </div>
+            <div class="modal-footer">
+                <button id="modalBtnCancel" class="btn-modal btn-no">
+                    <i class="fa-solid fa-ban"></i> Não
+                </button>
+                <button id="modalBtnConfirm" class="btn-modal btn-yes">
+                    <i class="fa-regular fa-circle-check"></i> Sim
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
