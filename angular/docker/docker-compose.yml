@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  dev:
+    build: .
+    container_name: dev-angular-treeview
+    user: root
+    # Mantém o container vivo e interativo
+    stdin_open: true 
+    tty: true
+    privileged: true
+    volumes:
+      - "./angular/projeto:/projeto"
+      # Truque: não sincronizar a node_modules do Windows com o Linux (evita erros de permissão/compilação)
+      - /projeto/node_modules
+    ports:
+      - "4200:4200"
+    command: /bin/zsh

@@ -367,7 +367,6 @@ function moveNodeToRoot(sourceId) {
     }
 }
 
-// Altere sua função render para incluir a configuração da raiz
 function render() {
     const root = document.getElementById('treeview');
     renderTree(treeData, root);

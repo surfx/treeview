@@ -60,3 +60,10 @@ No arquivo script.js, você pode alternar a exibição dos checkboxes:
 let permitirMarcar = true; // Altere para false para esconder os checkboxes
 ```
 
+# SASS
+
+Para compilar o `style.scss` em `style.css`, utilize o auxilixar `.\compilar_scss.ps1`
+
+# Urls
+
+- [dart sass](https://github.com/sass/dart-sass/releases/tag/1.97.2)
