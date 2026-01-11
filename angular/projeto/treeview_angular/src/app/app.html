@@ -1,3 +1,3 @@
-<app-treeview></app-treeview>
-
-<router-outlet />
+@if (nodes().length > 0) {
+  <app-treeview [nodes]="nodes()"></app-treeview>
+}

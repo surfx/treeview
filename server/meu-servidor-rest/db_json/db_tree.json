@@ -39,7 +39,7 @@
                         "id": "4",
                         "name": "Imagens",
                         "type": "folder",
-                        "isOpen": false,
+                        "isOpen": true,
                         "checked": false,
                         "children": [
                             {
@@ -74,7 +74,7 @@
         "id": "1768092075618",
         "name": "meuarquivo.txt",
         "type": "file",
-        "checked": false,
+        "checked": true,
         "isOpen": true
     }
 ]

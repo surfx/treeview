@@ -91,10 +91,11 @@ function renderTree(nodes, container) {
             caretSpan.innerHTML = node.isOpen 
                 ? '<i class="fa-solid fa-caret-down"></i>' 
                 : '<i class="fa-solid fa-caret-right"></i>';
-            caretSpan.onclick = (e) => {
+            caretSpan.onclick = async (e) => {
                 e.stopPropagation();
                 node.isOpen = !node.isOpen;
                 render();
+                await saveTree();
             };
         }
         content.appendChild(caretSpan);
@@ -104,10 +105,11 @@ function renderTree(nodes, container) {
             const checkSpan = document.createElement('span');
             checkSpan.className = 'checkbox';
             checkSpan.innerHTML = getCheckboxIcon(node);
-            checkSpan.onclick = (e) => {
+            checkSpan.onclick = async (e) => {
                 e.stopPropagation();
                 toggleCheck(node);
                 render();
+                await saveTree();
             };
             content.appendChild(checkSpan);
         }

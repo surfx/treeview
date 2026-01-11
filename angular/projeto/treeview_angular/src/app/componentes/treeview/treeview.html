@@ -1,1 +1,23 @@
-<p>treeview works!</p>
+<ul>
+  <ng-container *ngTemplateOutlet="treeList; context: { $implicit: nodes }"></ng-container>
+</ul>
+
+<ng-template #treeList let-list>
+  @for (node of list; track node.id) {
+    <li>
+      <div>
+        <span>{{ node.type === 'folder' ? '📁' : '📄' }}</span>
+        <input type="checkbox" [checked]="node.checked">
+        <span (click)="node.isOpen = !node.isOpen" style="cursor: pointer">
+          {{ node.name }}
+        </span>
+      </div>
+
+      @if (node.type === 'folder' && node.isOpen && node.children) {
+        <ul>
+          <ng-container *ngTemplateOutlet="treeList; context: { $implicit: node.children }"></ng-container>
+        </ul>
+      }
+    </li>
+  }
+</ng-template>
