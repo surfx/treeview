@@ -1,0 +1,73 @@
+[
+    {
+        "id": "1768092063617",
+        "name": "nova pasta raiz",
+        "type": "folder",
+        "checked": false,
+        "isOpen": true,
+        "children": [
+            {
+                "id": "1",
+                "name": "Documentos",
+                "type": "folder",
+                "isOpen": true,
+                "checked": false,
+                "children": [
+                    {
+                        "id": "3",
+                        "name": "notas.txt",
+                        "type": "file",
+                        "checked": false
+                    },
+                    {
+                        "id": "7",
+                        "name": "Configurações",
+                        "type": "folder",
+                        "isOpen": true,
+                        "checked": false,
+                        "children": [
+                            {
+                                "id": "2",
+                                "name": "projeto_final.pdf",
+                                "type": "file",
+                                "checked": false
+                            }
+                        ],
+                        "indeterminate": false
+                    },
+                    {
+                        "id": "4",
+                        "name": "Imagens",
+                        "type": "folder",
+                        "isOpen": true,
+                        "checked": false,
+                        "children": [
+                            {
+                                "id": "5",
+                                "name": "foto_perfil.png",
+                                "type": "file",
+                                "checked": false
+                            },
+                            {
+                                "id": "6",
+                                "name": "banner.jpg",
+                                "type": "file",
+                                "checked": false
+                            }
+                        ],
+                        "indeterminate": false
+                    }
+                ],
+                "indeterminate": false
+            }
+        ],
+        "indeterminate": false
+    },
+    {
+        "id": "1768092075618",
+        "name": "dsfasdf",
+        "type": "file",
+        "checked": false,
+        "isOpen": true
+    }
+]

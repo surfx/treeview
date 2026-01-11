@@ -1,7 +1,9 @@
 let permitirMarcar = true;
 
+const API_URL = 'http://127.0.0.1:8000/tree';
+
 // Estrutura de dados inicial (Tipada: folder ou file)
-let treeData = [
+const treeDataReferencia = [
     {
         id: "1",
         name: "Documentos",
@@ -33,6 +35,38 @@ let treeData = [
         children: []
     }
 ];
+
+
+let treeData = [];
+
+async function saveTree() {
+    try {
+        await fetch(`${API_URL}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(treeData)
+        });
+        console.log("Árvore sincronizada com o servidor.");
+    } catch (error) {
+        console.error("Erro ao salvar árvore:", error);
+    }
+}
+
+// Atualize sua função loadTree para renderizar logo após carregar
+async function loadTree() {
+    try {
+        const response = await fetch(`${API_URL}`);
+        const data = await response.json();
+        treeData = (data && data.length > 0) ? data : treeDataReferencia;
+        render(); // Renderiza com os dados vindos do servidor
+    } catch (e) {
+        console.warn("Servidor offline, usando dados de referência.");
+        treeData = treeDataReferencia;
+        render();
+    }
+}
+
+loadTree();
 
 let draggedNodeId = null;
 
@@ -296,6 +330,9 @@ function moveNode(sourceId, targetId) {
     }
 
     render();
+
+    // Sincroniza a nova posição com o servidor Python
+    saveTree();
 }
 
 /**
@@ -544,6 +581,7 @@ async function addNode(targetId, type) {
 
     findAndInsert(treeData);
     render();
+    await saveTree(); // Salva a inclusão
 }
 
 /**
@@ -588,8 +626,13 @@ async function deleteNode(id) {
         return false;
     };
 
+    // 4. Executar a exclusão na memória (JavaScript)
     findAndRemove(treeData);
+    // 5. Atualizar o visual na tela
     render();
+
+    // 6. ENVIAR PARA O SERVIDOR (A parte nova)
+    await saveTree();
 }
 
 /**
@@ -606,7 +649,6 @@ async function addNodeRoot(type) {
     const titulo = isFolder ? "Nova Pasta Raiz" : "Novo Arquivo Raiz";
     
     const name = await showModal(titulo, `Digite o nome da ${label} para a raiz:`, true);
-    
     if (!name) return;
 
     treeData.push({
@@ -618,6 +660,7 @@ async function addNodeRoot(type) {
         children: isFolder ? [] : undefined
     });
     render();
+    await saveTree(); // Salva a inclusão na raiz
 }
 
 // Inicializa
