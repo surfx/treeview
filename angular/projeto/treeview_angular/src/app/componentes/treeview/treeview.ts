@@ -14,29 +14,23 @@ import { ModalComponent, ModalConfig } from '../modal';
 export class Treeview {
   // Substitui @Input() e @Output()
   treeData = model<TreeNode[]>([]);
-  treeChange = output<TreeNode[]>();
+
+  // Eventos para notificar o componente pai sobre as mudanças.
+  nodeUpdated = output<{ id: string; changes: Partial<TreeNode> }>();
+  nodeDeleted = output<string>();
+  structuralChange = output<TreeNode[]>();
 
   @ViewChild(ModalComponent) modal!: ModalComponent;
 
-  // Estado de Drag & Drop
   private draggedNode: TreeNode | null = null;
   draggedOverNodeId: string | null = null;
   isRootDragOver = false;
 
   constructor() {}
 
-  // --- Lógica de Sincronização e Reatividade ---
-
-  /**
-   * Notifica o Angular que o sinal mudou. 
-   * Criar uma nova referência [...nodes] garante que o Signal dispare a atualização do DOM.
-   */
-  private notifyChange(): void {
+  private triggerUIUpdate(): void {
     this.treeData.update(nodes => [...nodes]);
-    this.treeChange.emit(this.treeData());
   }
-
-  // --- Lógica de Ações nos Nós ---
 
   private async showModal(config: ModalConfig, defaultValue?: string): Promise<string | boolean | null> {
     return this.modal.open(config, defaultValue);
@@ -60,13 +54,15 @@ export class Treeview {
       };
       
       this.treeData.update(nodes => [...nodes, newNode]);
-      this.treeChange.emit(this.treeData());
+      this.structuralChange.emit(this.treeData());
     }
   }
 
-  async addNode(parentNode: TreeNode, type: 'folder' | 'file', event: MouseEvent): Promise<void> {
+  async addNode(contextNode: TreeNode, type: 'folder' | 'file', event: MouseEvent): Promise<void> {
     event.stopPropagation();
     const label = type === 'folder' ? 'pasta' : 'arquivo';
+    const title = `Novo ${label} ${contextNode.type === 'folder' ? 'em ' + contextNode.name : 'ao lado de ' + contextNode.name}`;
+    
     const name = await this.showModal({
       title: `Novo ${label}`,
       message: `Digite o nome do novo ${label}:`,
@@ -75,20 +71,26 @@ export class Treeview {
 
     if (name && typeof name === 'string') {
         const newNode: TreeNode = {
-            id: Date.now().toString(),
-            name,
-            type,
-            checked: false,
+            id: Date.now().toString(), name, type, checked: false,
             children: type === 'folder' ? [] : undefined
         };
 
-        if (parentNode.type === 'folder') {
-            parentNode.children = parentNode.children || [];
-            parentNode.children.push(newNode);
-            parentNode.isOpen = true;
+        if (contextNode.type === 'folder') {
+            // Ação em uma pasta: adiciona como filho.
+            contextNode.children = contextNode.children || [];
+            contextNode.children.push(newNode);
+            contextNode.isOpen = true;
+        } else {
+            // Ação em um arquivo: adiciona como irmão.
+            const success = this.addSiblingNode(this.treeData(), contextNode.id, newNode);
+            if (!success) {
+                console.error("Não foi possível encontrar o nó irmão para inserção.");
+                return;
+            }
         }
         this.updateAllParentStates();
-        this.notifyChange();
+        this.triggerUIUpdate();
+        this.structuralChange.emit(this.treeData());
     }
   }
 
@@ -101,8 +103,10 @@ export class Treeview {
     );
     
     if (newName && typeof newName === 'string' && newName.trim() !== '' && newName !== node.name) {
+      const oldName = node.name;
       node.name = newName;
-      this.notifyChange();
+      this.triggerUIUpdate();
+      this.nodeUpdated.emit({ id: node.id, changes: { name: newName } });
     }
   }
 
@@ -116,18 +120,19 @@ export class Treeview {
     const confirmed = await this.showModal({ title: `Excluir ${label}`, message });
 
     if (confirmed) {
-      this.findAndRemoveNode(this.treeData(), node.id);
-      this.notifyChange();
+      if (this.findAndRemoveNode(this.treeData(), node.id)) {
+        this.triggerUIUpdate();
+        this.nodeDeleted.emit(node.id);
+      }
     }
   }
-
-  // --- Ações da UI (Cliques) ---
 
   toggleCaret(node: TreeNode, event: MouseEvent): void {
     event.stopPropagation();
     if (node.type === 'folder') {
       node.isOpen = !node.isOpen;
-      this.notifyChange();
+      this.triggerUIUpdate();
+      this.nodeUpdated.emit({ id: node.id, changes: { isOpen: node.isOpen } });
     }
   }
 
@@ -142,21 +147,22 @@ export class Treeview {
     }
     
     this.updateAllParentStates();
-    this.notifyChange();
+    this.triggerUIUpdate();
+    this.structuralChange.emit(this.treeData());
   }
 
-  // --- Lógica de Drag and Drop ---
-  
   onDragStart(event: DragEvent, node: TreeNode): void {
     event.stopPropagation();
     this.draggedNode = node;
-    event.dataTransfer!.effectAllowed = 'move';
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+    }
   }
 
   onDragOver(event: DragEvent, node: TreeNode): void {
     event.preventDefault();
     event.stopPropagation();
-    if (node.type === 'folder' && this.draggedNode?.id !== node.id) {
+    if (this.draggedNode?.id !== node.id) {
       this.draggedOverNodeId = node.id;
     }
   }
@@ -169,10 +175,12 @@ export class Treeview {
   onDrop(event: DragEvent, targetNode: TreeNode): void {
     event.preventDefault();
     event.stopPropagation();
-    if (this.draggedNode && targetNode.type === 'folder' && this.draggedNode.id !== targetNode.id) {
-      this.moveNode(this.draggedNode.id, targetNode.id);
+    if (this.draggedNode && this.draggedNode.id !== targetNode.id) {
+      const mode = targetNode.type === 'folder' ? 'into' : 'before';
+      this.moveNode(this.draggedNode.id, targetNode.id, mode);
     }
     this.draggedOverNodeId = null;
+    this.draggedNode = null;
   }
   
   onRootDragOver(event: DragEvent): void {
@@ -192,28 +200,47 @@ export class Treeview {
       this.moveNodeToRoot(this.draggedNode.id);
     }
     this.isRootDragOver = false;
+    this.draggedNode = null;
   }
 
-  // --- Funções Auxiliares (Helpers) ---
+  private moveNode(sourceId: string, targetId: string, mode: 'into' | 'before'): void {
+    if (sourceId === targetId) return;
   
-  private moveNode(sourceId: string, targetParentId: string): void {
-    if (sourceId === targetParentId || this.isDescendant(sourceId, targetParentId)) {
-        return;
+    const sourceDetailsForCheck = this.findNodeDetails(this.treeData(), sourceId);
+    if (!sourceDetailsForCheck) {
+      console.error('Source node not found for checking.');
+      return;
+    };
+  
+    if (this.isDescendant(sourceId, targetId)) {
+      console.warn('Cannot move a node into its own descendant.');
+      return;
     }
-
+  
     const nodeToMove = this.findAndRemoveNode(this.treeData(), sourceId);
     if (!nodeToMove) return;
-
-    const targetParent = this.findNodeById(this.treeData(), targetParentId);
-    if (targetParent && targetParent.type === 'folder') {
-        targetParent.children = targetParent.children || [];
-        targetParent.children.push(nodeToMove);
-        targetParent.isOpen = true;
-        this.updateAllParentStates();
-        this.notifyChange();
-    } else {
-        this.treeData.update(nodes => [...nodes, nodeToMove]);
+  
+    const targetDetails = this.findNodeDetails(this.treeData(), targetId);
+    if (!targetDetails) {
+      console.error('Target node not found after source removal. Aborting move.');
+      // Re-triggering a structural change to allow parent to handle state recovery.
+      this.structuralChange.emit(this.treeData());
+      return;
     }
+  
+    if (mode === 'into' && targetDetails.node.type === 'folder') {
+      targetDetails.node.children = targetDetails.node.children || [];
+      targetDetails.node.children.push(nodeToMove);
+      targetDetails.node.isOpen = true;
+    } else {
+      const parentList = targetDetails.list;
+      const targetIndex = targetDetails.index;
+      parentList.splice(targetIndex, 0, nodeToMove);
+    }
+  
+    this.updateAllParentStates();
+    this.triggerUIUpdate();
+    this.structuralChange.emit(this.treeData());
   }
 
   private moveNodeToRoot(sourceId: string): void {
@@ -221,8 +248,41 @@ export class Treeview {
     if (nodeToMove) {
       this.treeData.update(nodes => [...nodes, nodeToMove]);
       this.updateAllParentStates();
-      this.notifyChange();
+      this.triggerUIUpdate();
+      this.structuralChange.emit(this.treeData());
     }
+  }
+
+  private findNodeDetails(nodes: TreeNode[], id: string, parent: TreeNode | null = null): { node: TreeNode, parent: TreeNode | null, list: TreeNode[], index: number } | null {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (node.id === id) {
+        return { node, parent, list: nodes, index: i };
+      }
+      if (node.children) {
+        const found = this.findNodeDetails(node.children, id, node);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  }
+
+  private addSiblingNode(nodes: TreeNode[], siblingId: string, newNode: TreeNode): boolean {
+    const siblingIndex = nodes.findIndex(node => node.id === siblingId);
+    if (siblingIndex !== -1) {
+        nodes.splice(siblingIndex + 1, 0, newNode);
+        return true;
+    }
+
+    for (const node of nodes) {
+        if (node.children && this.addSiblingNode(node.children, siblingId, newNode)) {
+            return true;
+        }
+    }
+
+    return false;
   }
 
   private findNodeById(nodes: TreeNode[] | undefined, id: string): TreeNode | null {
@@ -295,8 +355,6 @@ export class Treeview {
     });
   }
 
-  // --- Métodos de Template ---
-
   getCheckboxIcon(node: TreeNode): string {
     if (node.checked) return 'fa-regular fa-square-check';
     if (node.indeterminate) return 'fa-regular fa-square-minus';
@@ -307,8 +365,6 @@ export class Treeview {
     if (node.type === 'file') return 'fa-regular fa-file';
     return node.isOpen ? 'fa-regular fa-folder-open' : 'fa-regular fa-folder';
   }
-
-  // --- Lógica de Exportação ---
 
   exportarArvore(apenasSelecionados: boolean): void {
     const dadosExportados = this.processarNodosParaExport(this.treeData(), apenasSelecionados);

@@ -1,12 +1,9 @@
-<!-- 
-  A sintaxe agora lê o valor do signal chamando-o como uma função: treeData().
-  O bloco @if é renderizado se o comprimento do array no signal for maior que zero.
-  O valor do signal é passado para o @Input [treeData] do componente filho.
--->
 @if (treeData().length > 0) {
   <app-treeview 
-      [treeData]="treeData()" 
-      (treeChange)="onTreeChange($event)">
+      [treeData]="treeData()"
+      (nodeUpdated)="onNodeUpdate($event)"
+      (nodeDeleted)="onNodeDelete($event)"
+      (structuralChange)="onStructuralChange($event)">
   </app-treeview>
 } @else {
   <!-- Opcional: Mostrar uma mensagem de carregamento enquanto espera os dados -->

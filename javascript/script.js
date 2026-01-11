@@ -39,6 +39,22 @@ const treeDataReferencia = [
 
 let treeData = [];
 
+// Atualize sua função loadTree para renderizar logo após carregar
+async function loadTree() {
+    try {
+        const response = await fetch(`${API_URL}`);
+        const data = await response.json();
+        treeData = (data && data.length > 0) ? data : [];
+        render(); // Renderiza com os dados vindos do servidor
+    } catch (e) {
+        console.warn("Servidor offline, usando dados de referência.");
+        treeData = [];
+        render();
+    }
+}
+
+loadTree();
+
 async function saveTree() {
     try {
         await fetch(`${API_URL}`, {
@@ -52,21 +68,43 @@ async function saveTree() {
     }
 }
 
-// Atualize sua função loadTree para renderizar logo após carregar
-async function loadTree() {
+async function updateNodeOnServer(nodeId, updateData) {
     try {
-        const response = await fetch(`${API_URL}`);
-        const data = await response.json();
-        treeData = (data && data.length > 0) ? data : treeDataReferencia;
-        render(); // Renderiza com os dados vindos do servidor
-    } catch (e) {
-        console.warn("Servidor offline, usando dados de referência.");
-        treeData = treeDataReferencia;
-        render();
+        const response = await fetch(`${API_URL}/${nodeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+        });
+        if (!response.ok) {
+            const errorResult = await response.json();
+            throw new Error(errorResult.mensagem || `HTTP error! status: ${response.status}`);
+        }
+        console.log(`Nó ${nodeId} atualizado no servidor.`);
+    } catch (error) {
+        console.error(`Erro ao atualizar nó ${nodeId}:`, error);
+        // Opcional: Reverter a alteração na UI ou recarregar a árvore
+        // await loadTree(); 
     }
 }
 
-loadTree();
+async function deleteNodeOnServer(nodeId) {
+    try {
+        const response = await fetch(`${API_URL}/${nodeId}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) {
+            const errorResult = await response.json();
+            throw new Error(errorResult.mensagem || `HTTP error! status: ${response.status}`);
+        }
+        console.log(`Nó ${nodeId} deletado do servidor.`);
+    } catch (error) {
+        console.error(`Erro ao deletar nó ${nodeId}:`, error);
+        // Opcional: Reverter a alteração na UI ou recarregar a árvore
+        // await loadTree();
+    }
+}
+
+
 
 let draggedNodeId = null;
 
@@ -95,7 +133,7 @@ function renderTree(nodes, container) {
                 e.stopPropagation();
                 node.isOpen = !node.isOpen;
                 render();
-                await saveTree();
+                await updateNodeOnServer(node.id, { isOpen: node.isOpen });
             };
         }
         content.appendChild(caretSpan);
@@ -238,6 +276,25 @@ function updateParentStates(nodes) {
 }
 
 /**
+ * Função auxiliar para encontrar detalhes de um nó (nó, pai, lista e índice)
+ */
+function findNodeDetails(id, list, parent = null) {
+    for (let i = 0; i < list.length; i++) {
+        const node = list[i];
+        if (node.id === id) {
+            return { node, parent, list, index: i };
+        }
+        if (node.children) {
+            const found = findNodeDetails(id, node.children, node);
+            if (found) {
+                return found;
+            }
+        }
+    }
+    return null;
+}
+
+/**
  * Configuração de Drag and Drop
  */
 function setupDragAndDrop(element, content, node) {
@@ -250,7 +307,7 @@ function setupDragAndDrop(element, content, node) {
     element.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (node.type === 'folder' && draggedNodeId !== node.id) {
+        if (draggedNodeId !== node.id) {
             content.classList.add('drag-over');
         }
     });
@@ -264,9 +321,12 @@ function setupDragAndDrop(element, content, node) {
         e.stopPropagation();
         content.classList.remove('drag-over');
 
-        if (node.type === 'folder' && draggedNodeId !== node.id) {
-            moveNode(draggedNodeId, node.id);
-            render();
+        if (draggedNodeId && draggedNodeId !== node.id) {
+            // Se o alvo for uma pasta, move para dentro.
+            // Se for um arquivo, insere antes.
+            const mode = node.type === 'folder' ? 'into' : 'before';
+            moveNode(draggedNodeId, node.id, mode);
+            draggedNodeId = null; // Limpa após o drop
         }
     });
 }
@@ -274,25 +334,23 @@ function setupDragAndDrop(element, content, node) {
 /**
  * Move um nodo de um lugar para outro no objeto de dados
  */
-function moveNode(sourceId, targetId) {
+function moveNode(sourceId, targetId, mode = 'into') {
     if (sourceId === targetId) return;
 
-    let sourceNode = null;
-    let targetNode = null;
+    // 1. Achar detalhes do nó de origem para checagens
+    const sourceDetailsForCheck = findNodeDetails(sourceId, treeData);
+    if (!sourceDetailsForCheck) {
+        console.error("Nó de origem não encontrado para checagem.");
+        return;
+    }
 
-    // 1. Localizar os objetos dos nós envolvidos para análise
-    const findNodes = (list) => {
-        for (let n of list) {
-            if (n.id === sourceId) sourceNode = n;
-            if (n.id === targetId) targetNode = n;
-            if (n.children) findNodes(n.children);
-        }
-    };
-    findNodes(treeData);
+    // 2. Prevenir mover um nó para seu próprio descendente
+    if (isDescendant(sourceDetailsForCheck.node, targetId)) {
+        console.warn("Movimento inválido: não é possível mover um item para dentro de si mesmo ou de seus descendentes.");
+        return;
+    }
 
-    if (!sourceNode || !targetNode) return;
-
-    // Função auxiliar para remover um nó de qualquer lugar da árvore
+    // 3. Achar e remover o nó de origem da sua posição original
     const removeNodeFromList = (list, id) => {
         for (let i = 0; i < list.length; i++) {
             if (list[i].id === id) return list.splice(i, 1)[0];
@@ -303,45 +361,34 @@ function moveNode(sourceId, targetId) {
         }
         return null;
     };
+    const nodeToMove = removeNodeFromList(treeData, sourceId);
+    if (!nodeToMove) {
+        console.error("Não foi possível encontrar e remover o nó de origem.");
+        return;
+    }
 
-    // 2. CASO ESPECIAL: Mover Pai para dentro do Filho (Inversão)
-    if (isDescendant(sourceNode, targetId)) {
-        console.log("Detectada tentativa de mover pai para filho. Invertendo hierarquia...");
+    // 4. Achar os detalhes do nó de destino
+    const targetDetails = findNodeDetails(targetId, treeData);
+    if (!targetDetails) {
+        console.error("Nó de destino não encontrado. Recarregando a árvore para evitar perda de dados.");
+        loadTree(); // Failsafe para evitar estado inconsistente
+        return;
+    }
 
-        // A. Removemos o filho (alvo) de dentro do pai (origem)
-        const filhoExtraido = removeNodeFromList(sourceNode.children, targetId);
-        
-        // B. Removemos o pai de onde quer que ele esteja na árvore original
-        const paiExtraido = removeNodeFromList(treeData, sourceId);
-
-        if (filhoExtraido && paiExtraido) {
-            // C. O antigo pai agora vira filho do seu próprio filho
-            if (!filhoExtraido.children) filhoExtraido.children = [];
-            filhoExtraido.children.push(paiExtraido);
-            filhoExtraido.isOpen = true;
-
-            // D. O filho (que agora carrega o pai) é promovido para a raiz
-            treeData.push(filhoExtraido);
+    // 5. Inserir o nó na nova posição
+    if (mode === 'into' && targetDetails.node.type === 'folder') {
+        // Mover PARA DENTRO da pasta (no final)
+        if (!targetDetails.node.children) {
+            targetDetails.node.children = [];
         }
-    } 
-    // 3. CASO NORMAL: Mover para uma pasta que não é sua descendente
-    else {
-        if (targetNode.type !== 'folder') {
-            console.warn("Destino não é uma pasta.");
-            return;
-        }
-
-        const nodeToMove = removeNodeFromList(treeData, sourceId);
-        if (nodeToMove) {
-            if (!targetNode.children) targetNode.children = [];
-            targetNode.children.push(nodeToMove);
-            targetNode.isOpen = true;
-        }
+        targetDetails.node.children.push(nodeToMove);
+        targetDetails.node.isOpen = true; // Abre a pasta ao soltar algo dentro
+    } else {
+        // Inserir ANTES do item de destino (reordenação)
+        targetDetails.list.splice(targetDetails.index, 0, nodeToMove);
     }
 
     render();
-
-    // Sincroniza a nova posição com o servidor Python
     saveTree();
 }
 
@@ -358,9 +405,7 @@ function isDescendant(parentNode, targetId) {
 /**
  * Função para configurar o container principal como alvo de drop (Raiz)
  */
-function setupRootDropZone() {
-    const rootContainer = document.getElementById('treeview');
-
+function setupRootDropZone(rootContainer) {
     rootContainer.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -415,9 +460,29 @@ function moveNodeToRoot(sourceId) {
 }
 
 function render() {
-    const root = document.getElementById('treeview');
-    renderTree(treeData, root);
-    setupRootDropZone(); // Configura o container para aceitar itens
+    const oldRoot = document.getElementById('treeview');
+    if (!oldRoot) return; // Se o root não existir, não faz nada
+
+    // Desativa temporariamente as transições para uma renderização instantânea
+    document.body.classList.add('no-transitions');
+
+    // Cria um novo container fora do DOM para construir a árvore
+    const newRoot = oldRoot.cloneNode(false);
+    
+    // Renderiza a árvore no novo container
+    renderTree(treeData, newRoot);
+    
+    // Anexa os eventos de drop da raiz no novo container
+    setupRootDropZone(newRoot);
+
+    // Substitui o container antigo pelo novo de uma vez só
+    oldRoot.parentNode.replaceChild(newRoot, oldRoot);
+
+    // Usa um pequeno timeout para garantir que o navegador processou a remoção das transições
+    // antes de reativá-las.
+    setTimeout(() => {
+        document.body.classList.remove('no-transitions');
+    }, 50);
 }
 
 /**
@@ -624,7 +689,7 @@ async function editNode(id) {
     if (newName && newName.trim() !== '' && newName !== nodeToEdit.name) {
         nodeToEdit.name = newName;
         render();
-        await saveTree(); // Salva a alteração
+        await updateNodeOnServer(id, { name: newName }); // Salva a alteração
     }
 }
 
@@ -658,7 +723,6 @@ async function deleteNode(id) {
     
     if (!confirmacao) return;
 
-    // 4. Executar a exclusão
     const findAndRemove = (list) => {
         for (let i = 0; i < list.length; i++) {
             if (list[i].id === id) {
@@ -670,13 +734,10 @@ async function deleteNode(id) {
         return false;
     };
 
-    // 4. Executar a exclusão na memória (JavaScript)
-    findAndRemove(treeData);
-    // 5. Atualizar o visual na tela
-    render();
-
-    // 6. ENVIAR PARA O SERVIDOR (A parte nova)
-    await saveTree();
+    if (findAndRemove(treeData)) {
+        render(); // Atualiza a UI
+        await deleteNodeOnServer(id); // Sincroniza com o servidor
+    }
 }
 
 /**

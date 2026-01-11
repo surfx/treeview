@@ -53,13 +53,15 @@
           <span class="action-btn" title="Renomear" (click)="editNode(node, $event)">
             <i class="fa-solid fa-pencil"></i>
           </span>
-          @if (node.type === 'folder') {
-            <span class="action-btn" title="Adicionar subpasta" (click)="addNode(node, 'folder', $event)">
-                <i class="fa-solid fa-folder-plus"></i>
-            </span>
-          }
-          <span class="action-btn" title="Adicionar arquivo" (click)="addNode(node, 'file', $event)">
-              <i class="fa-solid fa-plus"></i>
+          <span class="action-btn" 
+                [title]="node.type === 'folder' ? 'Adicionar subpasta' : 'Adicionar pasta no mesmo nível'"
+                (click)="addNode(node, 'folder', $event)">
+            <i class="fa-solid fa-folder-plus"></i>
+          </span>
+          <span class="action-btn" 
+                [title]="node.type === 'folder' ? 'Adicionar arquivo' : 'Adicionar arquivo no mesmo nível'"
+                (click)="addNode(node, 'file', $event)">
+            <i class="fa-solid fa-plus"></i>
           </span>
           <span class="action-btn btn-delete" title="Excluir" (click)="deleteNode(node, $event)">
             <i class="fa-solid fa-minus"></i>

@@ -18,19 +18,20 @@ app.add_middleware(
 DB_PATH = r"D:\projetos\javascript\treeview\server\meu-servidor-rest\db_json\db_tree.json"
 
 # Dados iniciais caso o arquivo não exista
-INITIAL_DATA = [
-    {
-        "id": "1",
-        "name": "Documentos",
-        "type": "folder",
-        "isOpen": True,
-        "checked": False,
-        "children": [
-            {"id": "2", "name": "projeto_final.pdf", "type": "file", "checked": False},
-            {"id": "3", "name": "notas.txt", "type": "file", "checked": False}
-        ]
-    }
-]
+# INITIAL_DATA = [
+#     {
+#         "id": "1",
+#         "name": "Documentos",
+#         "type": "folder",
+#         "isOpen": True,
+#         "checked": False,
+#         "children": [
+#             {"id": "2", "name": "projeto_final.pdf", "type": "file", "checked": False},
+#             {"id": "3", "name": "notas.txt", "type": "file", "checked": False}
+#         ]
+#     }
+# ]
+INITIAL_DATA = []
 
 def load_from_disk():
     """Lê os dados do arquivo JSON"""
@@ -56,6 +57,26 @@ def save_to_disk(data):
     except Exception as e:
         print(f"Erro ao salvar arquivo: {e}")
 
+def update_node_recursive(nodes, target_id, update_data):
+    for node in nodes:
+        if node["id"] == target_id:
+            node.update(update_data)
+            return True
+        if "children" in node:
+            if update_node_recursive(node["children"], target_id, update_data):
+                return True
+    return False
+
+def delete_node_recursive(nodes, target_id):
+    for i, node in enumerate(nodes):
+        if node["id"] == target_id:
+            nodes.pop(i)
+            return True
+        if "children" in node:
+            if delete_node_recursive(node["children"], target_id):
+                return True
+    return False
+
 @app.get("/tree")
 async def get_tree():
     """Retorna os dados lidos do disco"""
@@ -66,6 +87,22 @@ async def save_tree(new_data: List = Body(...)):
     """Recebe os dados do front-end e grava no disco"""
     save_to_disk(new_data)
     return {"status": "sucesso", "mensagem": "Dados gravados no JSON"}
+
+@app.put("/tree/{node_id}")
+async def update_node(node_id: str, update_data: dict = Body(...)):
+    data = load_from_disk()
+    if update_node_recursive(data, node_id, update_data):
+        save_to_disk(data)
+        return {"status": "sucesso", "mensagem": f"Item {node_id} atualizado"}
+    return {"status": "erro", "mensagem": "Item não encontrado"}, 404
+
+@app.delete("/tree/{node_id}")
+async def delete_node(node_id: str):
+    data = load_from_disk()
+    if delete_node_recursive(data, node_id):
+        save_to_disk(data)
+        return {"status": "sucesso", "mensagem": f"Item {node_id} removido"}
+    return {"status": "erro", "mensagem": "Item não encontrado"}, 404
 
 if __name__ == "__main__":
     import uvicorn

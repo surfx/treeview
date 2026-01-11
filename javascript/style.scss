@@ -281,3 +281,8 @@ body {
     background: #f44336;
     color: white;
 }
+
+/* Helper para desativar transições durante o render */
+.no-transitions * {
+    transition: none !important;
+}
