@@ -16,3 +16,4 @@ services:
     ports:
       - "4200:4200"
     command: /bin/zsh
+    # command: /bin/zsh -c "/projeto/treeview_angular/execute_angular.sh"

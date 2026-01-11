@@ -2,7 +2,7 @@
 
 Um componente de árvore de arquivos (File Explorer) dinâmico e interativo, desenvolvido com JavaScript puro (Vanilla JS). O sistema oferece uma experiência completa de gerenciamento de arquivos diretamente no navegador.
 
-![Demonstração do Projeto](arquivos_readme/image.png)
+![Demonstração do Projeto](../arquivos_readme/image.png)
 
 ## 🚀 Funcionalidades
 

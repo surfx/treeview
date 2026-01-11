@@ -134,6 +134,14 @@ function renderTree(nodes, container) {
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'node-actions';
 
+        // Botão Editar
+        const editBtn = document.createElement('span');
+        editBtn.className = 'action-btn';
+        editBtn.title = "Renomear";
+        editBtn.innerHTML = '<i class="fa-solid fa-pencil"></i>';
+        editBtn.onclick = (e) => { e.stopPropagation(); editNode(node.id); };
+        actionsDiv.appendChild(editBtn);
+
         // Botão Adicionar Pasta (Filha se for pasta, Irmã se for arquivo)
         const addFolderBtn = document.createElement('span');
         addFolderBtn.className = 'action-btn';
@@ -481,7 +489,7 @@ document.getElementById('btnExportar').addEventListener('click', () => {
 /**
  * Função genérica para exibir o modal
  */
-function showModal(title, message, isPrompt = false) {
+function showModal(title, message, isPrompt = false, defaultValue = '') {
     return new Promise((resolve) => {
         const modal = document.getElementById('customModal');
         const input = document.getElementById('modalInput');
@@ -494,9 +502,12 @@ function showModal(title, message, isPrompt = false) {
         
         if (isPrompt) {
             input.classList.remove('hidden');
-            input.value = "";
+            input.value = defaultValue; // Usar o valor padrão
             // Pequeno delay para garantir que o elemento está visível antes do foco
-            setTimeout(() => input.focus(), 10);
+            setTimeout(() => {
+                input.focus();
+                input.select(); // Seleciona o texto para facilitar a edição
+            }, 10);
         } else {
             input.classList.add('hidden');
         }
@@ -582,6 +593,37 @@ async function addNode(targetId, type) {
     findAndInsert(treeData);
     render();
     await saveTree(); // Salva a inclusão
+}
+
+/**
+ * Renomeia um nodo existente
+ */
+async function editNode(id) {
+    // 1. Encontrar o nodo
+    let nodeToEdit = null;
+    const findNode = (list) => {
+        for (let n of list) {
+            if (n.id === id) {
+                nodeToEdit = n;
+                return;
+            }
+            if (n.children) findNode(n.children);
+        }
+    };
+    findNode(treeData);
+
+    if (!nodeToEdit) return;
+
+    // 2. Chamar o modal com o nome atual
+    const label = nodeToEdit.type === 'folder' ? 'pasta' : 'arquivo';
+    const newName = await showModal(`Renomear ${label}`, 'Digite o novo nome:', true, nodeToEdit.name);
+
+    // 3. Atualizar se um novo nome foi fornecido e é diferente
+    if (newName && newName.trim() !== '' && newName !== nodeToEdit.name) {
+        nodeToEdit.name = newName;
+        render();
+        await saveTree(); // Salva a alteração
+    }
 }
 
 /**

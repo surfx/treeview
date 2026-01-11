@@ -1,7 +1,7 @@
 [
     {
         "id": "1768092063617",
-        "name": "nova pasta raiz",
+        "name": "asdfasdf",
         "type": "folder",
         "checked": false,
         "isOpen": true,
@@ -14,12 +14,6 @@
                 "checked": false,
                 "children": [
                     {
-                        "id": "3",
-                        "name": "notas.txt",
-                        "type": "file",
-                        "checked": false
-                    },
-                    {
                         "id": "7",
                         "name": "Configurações",
                         "type": "folder",
@@ -31,6 +25,12 @@
                                 "name": "projeto_final.pdf",
                                 "type": "file",
                                 "checked": false
+                            },
+                            {
+                                "id": "3",
+                                "name": "notas.txt",
+                                "type": "file",
+                                "checked": false
                             }
                         ],
                         "indeterminate": false
@@ -39,7 +39,7 @@
                         "id": "4",
                         "name": "Imagens",
                         "type": "folder",
-                        "isOpen": true,
+                        "isOpen": false,
                         "checked": false,
                         "children": [
                             {
@@ -56,6 +56,13 @@
                             }
                         ],
                         "indeterminate": false
+                    },
+                    {
+                        "id": "1768125891425",
+                        "name": "joints_export.jpeg",
+                        "type": "file",
+                        "checked": false,
+                        "isOpen": true
                     }
                 ],
                 "indeterminate": false
@@ -65,7 +72,7 @@
     },
     {
         "id": "1768092075618",
-        "name": "dsfasdf",
+        "name": "meuarquivo.txt",
         "type": "file",
         "checked": false,
         "isOpen": true
