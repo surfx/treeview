@@ -14,55 +14,60 @@
                 "checked": false,
                 "children": [
                     {
-                        "id": "7",
-                        "name": "Configurações",
-                        "type": "folder",
-                        "isOpen": true,
-                        "checked": false,
-                        "children": [
-                            {
-                                "id": "2",
-                                "name": "projeto_final.pdf",
-                                "type": "file",
-                                "checked": false
-                            },
-                            {
-                                "id": "3",
-                                "name": "notas.txt",
-                                "type": "file",
-                                "checked": false
-                            }
-                        ],
-                        "indeterminate": false
-                    },
-                    {
-                        "id": "4",
-                        "name": "Imagens",
-                        "type": "folder",
-                        "isOpen": true,
-                        "checked": false,
-                        "children": [
-                            {
-                                "id": "5",
-                                "name": "foto_perfil.png",
-                                "type": "file",
-                                "checked": false
-                            },
-                            {
-                                "id": "6",
-                                "name": "banner.jpg",
-                                "type": "file",
-                                "checked": false
-                            }
-                        ],
-                        "indeterminate": false
-                    },
-                    {
                         "id": "1768125891425",
                         "name": "joints_export.jpeg",
                         "type": "file",
                         "checked": false,
-                        "isOpen": true
+                        "isOpen": true,
+                        "indeterminate": false
+                    },
+                    {
+                        "id": "3",
+                        "name": "notas.txt",
+                        "type": "file",
+                        "checked": false,
+                        "indeterminate": false
+                    }
+                ],
+                "indeterminate": false
+            },
+            {
+                "id": "7",
+                "name": "Configurações",
+                "type": "folder",
+                "isOpen": true,
+                "checked": false,
+                "children": [
+                    {
+                        "id": "2",
+                        "name": "projeto_final2.pdf",
+                        "type": "file",
+                        "checked": false,
+                        "indeterminate": false
+                    }
+                ],
+                "indeterminate": false
+            },
+            {
+                "id": "4",
+                "name": "Imagens",
+                "type": "folder",
+                "isOpen": true,
+                "checked": false,
+                "children": [
+                    {
+                        "id": "5",
+                        "name": "foto_perfil.png",
+                        "type": "file",
+                        "checked": false,
+                        "indeterminate": false
+                    },
+                    {
+                        "id": "6",
+                        "name": "banner.jpg",
+                        "type": "file",
+                        "checked": false,
+                        "indeterminate": false
                     }
                 ],
                 "indeterminate": false
@@ -71,10 +76,21 @@
         "indeterminate": false
     },
     {
-        "id": "1768092075618",
-        "name": "meuarquivo.txt",
-        "type": "file",
-        "checked": true,
-        "isOpen": true
+        "id": "1768134094409",
+        "name": "dsfsdf",
+        "type": "folder",
+        "checked": false,
+        "children": [
+            {
+                "id": "1768092075618",
+                "name": "meuarquivo.txt",
+                "type": "file",
+                "checked": false,
+                "isOpen": true,
+                "indeterminate": false
+            }
+        ],
+        "isOpen": true,
+        "indeterminate": false
     }
 ]

@@ -1,0 +1,36 @@
+<!-- Modal -->
+@if (isOpen) {
+  <div class="modal-overlay" (click)="closeOnOverlayClick($event)">
+    <div class="modal-content" #modalContent>
+      <div class="modal-header">
+        <h3 id="modalTitle">{{ config.title }}</h3>
+        <span id="closeModal" class="close-btn" (click)="cancel()"><i class="fa-solid fa-circle-xmark"></i></span>
+      </div>
+      <div class="modal-body">
+        <p id="modalMessage">{{ config.message }}</p>
+        @if (config.isPrompt) {
+          <input 
+            type="text" 
+            id="modalInput" 
+            class="modal-input" 
+            placeholder="Digite o nome..."
+            [(ngModel)]="inputValue"
+            (keydown.enter)="confirm()"
+            (keydown.escape)="cancel()">
+        }
+      </div>
+      <div class="modal-footer">
+        <button id="modalBtnCancel" class="btn-modal btn-no" (click)="cancel()">
+          <i class="fa-solid fa-ban"></i> Não
+        </button>
+        <button 
+          id="modalBtnConfirm" 
+          class="btn-modal btn-yes" 
+          [class.btn-danger]="config.title.includes('Excluir')"
+          (click)="confirm()">
+          <i class="fa-regular fa-circle-check"></i> Sim
+        </button>
+      </div>
+    </div>
+  </div>
+}
