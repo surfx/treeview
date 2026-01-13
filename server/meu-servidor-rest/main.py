@@ -15,7 +15,8 @@ app.add_middleware(
 )
 
 # Caminho completo do arquivo
-DB_PATH = r"D:\projetos\javascript\treeview\server\meu-servidor-rest\db_json\db_tree.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "db_json", "db_tree.json")
 
 # Dados iniciais caso o arquivo não exista
 # INITIAL_DATA = [
